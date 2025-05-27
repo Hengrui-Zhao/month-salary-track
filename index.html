@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>高级摸鱼记录器 (原型)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6; /* 更浅的背景色 */
+        }
+        .container-app {
+            max-width: 1200px; /* 允许更宽的布局 */
+            margin: 0 auto;
+            padding: 1rem;
+        }
+        .card {
+            background-color: white;
+            border-radius: 0.75rem; /* 更大的圆角 */
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        .input-field {
+            border: 1px solid #d1d5db;
+            padding: 0.75rem 1rem;
+            border-radius: 0.5rem;
+            width: 100%;
+            transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+        }
+        .input-field:focus {
+            border-color: #3b82f6; /* 蓝色的焦点边框 */
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25);
+            outline: none;
+        }
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            font-weight: 500;
+            transition: background-color 0.3s ease, transform 0.1s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .btn:active {
+            transform: translateY(1px);
+        }
+        .btn-primary {
+            background-color: #3b82f6; /* 蓝色主按钮 */
+            color: white;
+        }
+        .btn-primary:hover {
+            background-color: #2563eb;
+        }
+        .btn-danger {
+            background-color: #ef4444; /* 红色危险按钮 */
+            color: white;
+        }
+        .btn-danger:hover {
+            background-color: #dc2626;
+        }
+        .btn-success {
+            background-color: #22c55e; /* 绿色成功按钮 */
+            color: white;
+        }
+        .btn-success:hover {
+            background-color: #16a34a;
+        }
+        .stats-value {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #1f2937;
+        }
+        .stats-label {
+            font-size: 0.875rem;
+            color: #6b7280;
+        }
+        .timer-display-lg {
+            font-size: 3rem;
+            font-weight: 700;
+            color: #111827;
+            text-align: center;
+            margin: 1rem 0;
+            padding: 1rem;
+            background-color: #f9fafb;
+            border-radius: 0.5rem;
+            border: 1px solid #e5e7eb;
+        }
+        .toast {
+            position: fixed;
+            bottom: 20px; /* 调整位置 */
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: rgba(17, 24, 39, 0.85); /* 暗色背景 */
+            color: white;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            z-index: 1000;
+            opacity: 0;
+            transition: opacity 0.5s ease, transform 0.3s ease;
+            font-size: 0.9rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        }
+        .toast.show {
+            opacity: 1;
+            transform: translateX(-50%) translateY(0);
+        }
+        .toast.show.initial { /* 避免初始动画 */
+            transform: translateX(-50%) translateY(20px);
+        }
+        .icon-sm {
+            width: 1.25rem;
+            height: 1.25rem;
+            margin-right: 0.5rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container-app">
+        <header class="mb-6 py-4">
+            <h1 class="text-3xl font-bold text-center text-gray-800">高级摸鱼记录器 🐟</h1>
+        </header>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div class="md:col-span-1 space-y-6">
+                <div class="card">
+                    <h2 class="text-xl font-semibold text-gray-700 mb-4">⚙️ 基本配置</h2>
+                    <div class="space-y-4">
+                        <div>
+                            <label for="monthlySalary" class="block text-sm font-medium text-gray-700 mb-1">月薪 (元):</label>
+                            <input type="number" id="monthlySalary" class="input-field" placeholder="例如: 10000">
+                        </div>
+                        <div>
+                            <label for="workStartTime" class="block text-sm font-medium text-gray-700 mb-1">上班时间:</label>
+                            <input type="time" id="workStartTime" class="input-field">
+                        </div>
+                        <div>
+                            <label for="workEndTime" class="block text-sm font-medium text-gray-700 mb-1">下班时间:</label>
+                            <input type="time" id="workEndTime" class="input-field">
+                        </div>
+                        <button id="saveSettingsButton" class="btn btn-success w-full">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="icon-sm" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" /></svg>
+                            保存配置
+                        </button>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h2 class="text-xl font-semibold text-gray-700 mb-3">🎣 开始摸鱼</h2>
+                     <p id="statusText" class="text-center text-gray-600 mb-2">当前状态：休息中 😴</p>
+                    <div id="timerDisplay" class="timer-display-lg">00:00:00</div>
+                    <div>
+                        <label for="activityInput" class="block text-sm font-medium text-gray-700 mb-1">摸鱼活动 (可选):</label>
+                        <input type="text" id="activityInput" class="input-field mb-3" placeholder="例如：刷短视频、看新闻...">
+                    </div>
+                    <button id="toggleButton" class="btn btn-primary w-full">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="icon-sm" viewBox="0 0 20 20" fill="currentColor"><path d="M10 2a1 1 0 00-1 1v1a1 1 0 002 0V3a1 1 0 00-1-1zM4 9a1 1 0 011-1h10a1 1 0 110 2H5a1 1 0 01-1-1zM10 14a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM3 10a1 1 0 000 2h.01a1 1 0 100-2H3zm14 0a1 1 0 000 2h.01a1 1 0 100-2H17zM6.318 6.318a1 1 0 000 1.414L7.025 8.44a1 1 0 001.414-1.414L7.732 6.32a1 1 0 00-1.414 0zm8.364 5.657a1 1 0 000 1.414l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 0zm.707-7.071a1 1 0 00-1.414 0l-.707.707a1 1 0 101.414 1.414l.707-.707a1 1 0 000-1.414zM7.025 11.56a1 1 0 00-1.414 1.414l.707.707a1 1 0 001.414-1.414l-.707-.707z" /><path fill-rule="evenodd" d="M10 4a6 6 0 100 12 6 6 0 000-12zM8 10a2 2 0 114 0 2 2 0 01-4 0z" clip-rule="evenodd" /></svg>
+                        开始摸鱼
+                    </button>
+                </div>
+            </div>
+
+            <div class="md:col-span-2 space-y-6">
+                <div class="card">
+                    <h2 class="text-xl font-semibold text-gray-700 mb-4">📊 本月汇总 (截至今日)</h2>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <div class="p-4 bg-gray-50 rounded-lg">
+                            <p class="stats-label">月薪配置</p>
+                            <p id="summaryMonthlySalary" class="stats-value">未设置</p>
+                        </div>
+                        <div class="p-4 bg-gray-50 rounded-lg">
+                            <p class="stats-label">每日工作时间</p>
+                            <p id="summaryDailyWorkHours" class="stats-value">未设置</p>
+                        </div>
+                        <div class="p-4 bg-gray-50 rounded-lg">
+                            <p class="stats-label">本月工作日</p>
+                            <p id="summaryWorkingDays" class="stats-value">0 天</p>
+                        </div>
+                        <div class="p-4 bg-gray-50 rounded-lg">
+                            <p class="stats-label">本月计划总工时</p>
+                            <p id="summaryTotalScheduledHours" class="stats-value">0 小时</p>
+                        </div>
+                        <div class="p-4 bg-gray-50 rounded-lg">
+                            <p class="stats-label">本月总摸鱼</p>
+                            <p id="summaryTotalSlackingTime" class="stats-value">0 小时</p>
+                        </div>
+                         <div class="p-4 bg-blue-50 rounded-lg border border-blue-200">
+                            <p class="stats-label text-blue-700">实际生产力工时</p>
+                            <p id="summaryProductiveHours" class="stats-value text-blue-600">0 小时</p>
+                        </div>
+                        <div class="p-4 bg-green-50 rounded-lg border border-green-200 col-span-1 sm:col-span-2 lg:col-span-3">
+                            <p class="stats-label text-green-700">💰 时薪 (按实际生产力计算)</p>
+                            <p id="summaryEffectiveHourlyRate" class="stats-value text-green-600 text-2xl">¥ 0.00 /小时</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                     <div class="flex justify-between items-center mb-3">
+                        <h2 class="text-xl font-semibold text-gray-700">📜 摸鱼历史</h2>
+                        <button id="clearHistoryButton" class="text-sm text-red-500 hover:text-red-700 font-medium flex items-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="icon-sm" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                            清空历史
+                        </button>
+                    </div>
+                    <div id="historyList" class="space-y-3 max-h-96 overflow-y-auto pr-2">
+                        <p class="text-gray-500 text-center" id="noHistoryText">暂无摸鱼记录。</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="toastMessage" class="toast"></div>
+
+    <script>
+        // --- DOM Elements ---
+        const monthlySalaryInput = document.getElementById('monthlySalary');
+        const workStartTimeInput = document.getElementById('workStartTime');
+        const workEndTimeInput = document.getElementById('workEndTime');
+        const saveSettingsButton = document.getElementById('saveSettingsButton');
+
+        const statusText = document.getElementById('statusText');
+        const timerDisplay = document.getElementById('timerDisplay');
+        const activityInput = document.getElementById('activityInput');
+        const toggleButton = document.getElementById('toggleButton');
+        
+        const summaryMonthlySalary = document.getElementById('summaryMonthlySalary');
+        const summaryDailyWorkHours = document.getElementById('summaryDailyWorkHours');
+        const summaryWorkingDays = document.getElementById('summaryWorkingDays');
+        const summaryTotalScheduledHours = document.getElementById('summaryTotalScheduledHours');
+        const summaryTotalSlackingTime = document.getElementById('summaryTotalSlackingTime');
+        const summaryProductiveHours = document.getElementById('summaryProductiveHours');
+        const summaryEffectiveHourlyRate = document.getElementById('summaryEffectiveHourlyRate');
+
+        const historyList = document.getElementById('historyList');
+        const clearHistoryButton = document.getElementById('clearHistoryButton');
+        const noHistoryText = document.getElementById('noHistoryText');
+        const toastMessage = document.getElementById('toastMessage');
+
+        // --- State Variables ---
+        let appSettings = {
+            monthlySalary: null,
+            workStartTime: '09:00',
+            workEndTime: '18:00',
+        };
+        let isSlacking = false;
+        let slackingStartTime = null;
+        let timerInterval = null;
+        let slackingHistory = [];
+
+        // --- Helper Functions ---
+        function formatDuration(ms, mode = 'hms') { // mode can be 'hms' or 'hours'
+            if (ms < 0) ms = 0;
+            const totalSeconds = Math.floor(ms / 1000);
+            const hours = Math.floor(totalSeconds / 3600);
+            const minutes = Math.floor((totalSeconds % 3600) / 60);
+            const seconds = totalSeconds % 60;
+            if (mode === 'hours') {
+                return (ms / (1000 * 60 * 60)).toFixed(2);
+            }
+            return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+        }
+        
+        function showToast(message, duration = 3000) {
+            toastMessage.textContent = message;
+            toastMessage.classList.add('show', 'initial');
+            setTimeout(() => toastMessage.classList.remove('initial'), 10); // For entry animation
+            setTimeout(() => {
+                toastMessage.classList.remove('show');
+            }, duration);
+        }
+
+        function getMillisecondsFromTime(timeStr) { // "HH:MM"
+            if (!timeStr) return 0;
+            const [hours, minutes] = timeStr.split(':').map(Number);
+            return (hours * 60 + minutes) * 60 * 1000;
+        }
+
+        function getWeekdaysInCurrentMonth() {
+            const today = new Date();
+            const year = today.getFullYear();
+            const month = today.getMonth(); // 0-indexed
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            let weekdays = 0;
+            for (let day = 1; day <= daysInMonth; day++) {
+                const currentDate = new Date(year, month, day);
+                const dayOfWeek = currentDate.getDay(); // 0 for Sunday, 6 for Saturday
+                if (dayOfWeek !== 0 && dayOfWeek !== 6) {
+                    weekdays++;
+                }
+            }
+            return weekdays;
+        }
+
+        // --- Settings Management ---
+        function loadSettings() {
+            const storedSettings = localStorage.getItem('appSettings');
+            if (storedSettings) {
+                appSettings = JSON.parse(storedSettings);
+            }
+            monthlySalaryInput.value = appSettings.monthlySalary || '';
+            workStartTimeInput.value = appSettings.workStartTime || '09:00';
+            workEndTimeInput.value = appSettings.workEndTime || '18:00';
+            updateSummaryDisplay();
+        }
+
+        function saveSettings() {
+            appSettings.monthlySalary = parseFloat(monthlySalaryInput.value) || null;
+            appSettings.workStartTime = workStartTimeInput.value || '09:00';
+            appSettings.workEndTime = workEndTimeInput.value || '18:00';
+            localStorage.setItem('appSettings', JSON.stringify(appSettings));
+            showToast('✅ 配置已保存!', 2000);
+            updateSummaryDisplay();
+        }
+
+        // --- Slacking Logic ---
+        function loadSlackingHistory() {
+            const storedHistory = localStorage.getItem('slackingHistory_v2'); // New key for new structure
+            if (storedHistory) {
+                slackingHistory = JSON.parse(storedHistory);
+            }
+            renderHistory();
+            updateSummaryDisplay();
+        }
+
+        function saveSlackingHistory() {
+            localStorage.setItem('slackingHistory_v2', JSON.stringify(slackingHistory));
+        }
+
+        function renderHistory() {
+            historyList.innerHTML = ''; 
+            if (slackingHistory.length === 0) {
+                noHistoryText.style.display = 'block';
+                return;
+            }
+            noHistoryText.style.display = 'none';
+            slackingHistory.slice().reverse().forEach(item => {
+                const itemDiv = document.createElement('div');
+                itemDiv.className = 'p-3 bg-gray-50 rounded-md border border-gray-200';
+                
+                const activityText = item.activity ? item.activity : '未记录活动';
+                const durationText = formatDuration(item.duration);
+                const dateText = new Date(item.startTime).toLocaleString('zh-CN', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+
+                itemDiv.innerHTML = `
+                    <div class="flex justify-between items-center">
+                        <p class="font-medium text-gray-800">${activityText}</p>
+                        <p class="text-sm text-gray-600 font-semibold">${durationText}</p>
+                    </div>
+                    <p class="text-xs text-gray-500 mt-1">开始于: ${dateText}</p>
+                `;
+                historyList.appendChild(itemDiv);
+            });
+        }
+
+        function updateTimer() {
+            if (!isSlacking || !slackingStartTime) return;
+            const now = Date.now();
+            const elapsed = now - slackingStartTime;
+            timerDisplay.textContent = formatDuration(elapsed);
+        }
+        
+        // --- Summary Calculations & Display ---
+        function updateSummaryDisplay() {
+            // 1. Monthly Salary
+            summaryMonthlySalary.textContent = appSettings.monthlySalary ? `¥ ${appSettings.monthlySalary.toLocaleString()}` : '未设置';
+
+            // 2. Daily Work Hours
+            const dailyWorkStartMs = getMillisecondsFromTime(appSettings.workStartTime);
+            const dailyWorkEndMs = getMillisecondsFromTime(appSettings.workEndTime);
+            let dailyWorkDurationMs = 0;
+            if (appSettings.workStartTime && appSettings.workEndTime && dailyWorkEndMs > dailyWorkStartMs) {
+                dailyWorkDurationMs = dailyWorkEndMs - dailyWorkStartMs;
+                 summaryDailyWorkHours.textContent = `${appSettings.workStartTime} - ${appSettings.workEndTime} (${formatDuration(dailyWorkDurationMs, 'hours')} 小时)`;
+            } else {
+                summaryDailyWorkHours.textContent = '未设置或无效';
+            }
+
+            // 3. Working Days This Month
+            const weekdaysThisMonth = getWeekdaysInCurrentMonth();
+            summaryWorkingDays.textContent = `${weekdaysThisMonth} 天`;
+
+            // 4. Total Scheduled Work Hours This Month
+            const totalScheduledHours = (dailyWorkDurationMs / (1000 * 60 * 60)) * weekdaysThisMonth;
+            summaryTotalScheduledHours.textContent = `${totalScheduledHours.toFixed(2)} 小时`;
+            
+            // 5. Total Slacking Time This Month
+            const today = new Date();
+            const currentMonth = today.getMonth();
+            const currentYear = today.getFullYear();
+            const monthlySlackingMs = slackingHistory
+                .filter(item => {
+                    const itemDate = new Date(item.startTime);
+                    return itemDate.getMonth() === currentMonth && itemDate.getFullYear() === currentYear;
+                })
+                .reduce((sum, item) => sum + item.duration, 0);
+            const monthlySlackingHours = parseFloat(formatDuration(monthlySlackingMs, 'hours'));
+            summaryTotalSlackingTime.textContent = `${monthlySlackingHours.toFixed(2)} 小时`;
+
+            // 6. Productive Hours
+            const productiveHours = totalScheduledHours - monthlySlackingHours;
+            summaryProductiveHours.textContent = `${productiveHours > 0 ? productiveHours.toFixed(2) : '0.00'} 小时`;
+
+            // 7. Effective Hourly Rate
+            let effectiveRate = 0;
+            if (appSettings.monthlySalary && productiveHours > 0) {
+                effectiveRate = appSettings.monthlySalary / productiveHours;
+            }
+            summaryEffectiveHourlyRate.textContent = `¥ ${effectiveRate.toFixed(2)} /小时`;
+        }
+
+
+        // --- Event Listeners ---
+        saveSettingsButton.addEventListener('click', saveSettings);
+
+        toggleButton.addEventListener('click', () => {
+            isSlacking = !isSlacking;
+            if (isSlacking) {
+                slackingStartTime = Date.now();
+                timerInterval = setInterval(updateTimer, 1000);
+                toggleButton.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="icon-sm" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8 7a1 1 0 00-1 1v4a1 1 0 102 0V8a1 1 0 00-1-1zm4 0a1 1 0 00-1 1v4a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" /></svg> 结束摸鱼`;
+                toggleButton.classList.remove('btn-primary');
+                toggleButton.classList.add('btn-danger');
+                statusText.textContent = '当前状态：摸鱼中... 🐟';
+                activityInput.disabled = true;
+                showToast('摸鱼开始！尽情享受～', 2000);
+            } else {
+                clearInterval(timerInterval);
+                const endTime = Date.now();
+                const duration = endTime - slackingStartTime;
+                
+                if (duration > 1000) { // Only record if slacking for more than 1 second
+                    slackingHistory.push({
+                        startTime: slackingStartTime,
+                        endTime: endTime,
+                        duration: duration,
+                        activity: activityInput.value.trim() || '未指定活动'
+                    });
+                    saveSlackingHistory();
+                    renderHistory();
+                    updateSummaryDisplay(); // Update summary after new record
+                }
+                
+                timerDisplay.textContent = '00:00:00';
+                toggleButton.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="icon-sm" viewBox="0 0 20 20" fill="currentColor"><path d="M10 2a1 1 0 00-1 1v1a1 1 0 002 0V3a1 1 0 00-1-1zM4 9a1 1 0 011-1h10a1 1 0 110 2H5a1 1 0 01-1-1zM10 14a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM3 10a1 1 0 000 2h.01a1 1 0 100-2H3zm14 0a1 1 0 000 2h.01a1 1 0 100-2H17zM6.318 6.318a1 1 0 000 1.414L7.025 8.44a1 1 0 001.414-1.414L7.732 6.32a1 1 0 00-1.414 0zm8.364 5.657a1 1 0 000 1.414l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 0zm.707-7.071a1 1 0 00-1.414 0l-.707.707a1 1 0 101.414 1.414l.707-.707a1 1 0 000-1.414zM7.025 11.56a1 1 0 00-1.414 1.414l.707.707a1 1 0 001.414-1.414l-.707-.707z" /><path fill-rule="evenodd" d="M10 4a6 6 0 100 12 6 6 0 000-12zM8 10a2 2 0 114 0 2 2 0 01-4 0z" clip-rule="evenodd" /></svg> 开始摸鱼`;
+                toggleButton.classList.remove('btn-danger');
+                toggleButton.classList.add('btn-primary');
+                statusText.textContent = '当前状态：休息中 😴';
+                activityInput.value = '';
+                activityInput.disabled = false;
+                slackingStartTime = null;
+                showToast('摸鱼结束！已光荣记录。', 2000);
+            }
+        });
+
+        clearHistoryButton.addEventListener('click', () => {
+            if (slackingHistory.length === 0) {
+                showToast('没有历史记录可以清空。', 2000);
+                return;
+            }
+            // Simple confirm for prototype
+            if (confirm('确定要清空所有摸鱼历史记录吗？此操作不可撤销。')) {
+                slackingHistory = [];
+                saveSlackingHistory();
+                renderHistory();
+                updateSummaryDisplay(); // Update summary after clearing
+                showToast('所有历史记录已清空！', 2000);
+            }
+        });
+
+        // --- Initial Load ---
+        document.addEventListener('DOMContentLoaded', () => {
+            loadSettings();
+            loadSlackingHistory(); // This will also call renderHistory and updateSummaryDisplay
+            // Set default times if not set
+            if (!workStartTimeInput.value) workStartTimeInput.value = '09:00';
+            if (!workEndTimeInput.value) workEndTimeInput.value = '18:00';
+        });
+
+    </script>
+</body>
+</html>
