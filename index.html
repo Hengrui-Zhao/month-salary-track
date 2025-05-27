@@ -1,0 +1,737 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>高级摸鱼记录器 (原型)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f3f4f6;
+        }
+        .container-app {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 1rem;
+        }
+        .card {
+            background-color: white;
+            border-radius: 0.75rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -2px rgba(0, 0, 0, 0.1);
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        .input-field, .select-field {
+            border: 1px solid #d1d5db;
+            padding: 0.75rem 1rem;
+            border-radius: 0.5rem;
+            width: 100%;
+            transition: border-color 0.2s ease-in-out, box-shadow 0.2s ease-in-out;
+            background-color: white;
+        }
+        .input-field:focus, .select-field:focus {
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.25);
+            outline: none;
+        }
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem;
+            font-weight: 500;
+            transition: background-color 0.3s ease, transform 0.1s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .btn:active {
+            transform: translateY(1px);
+        }
+        .btn-primary { background-color: #3b82f6; color: white; }
+        .btn-primary:hover { background-color: #2563eb; }
+        .btn-danger { background-color: #ef4444; color: white; }
+        .btn-danger:hover { background-color: #dc2626; }
+        .btn-success { background-color: #22c55e; color: white; }
+        .btn-success:hover { background-color: #16a34a; }
+        .btn-secondary { background-color: #6b7280; color: white; }
+        .btn-secondary:hover { background-color: #4b5563; }
+
+        .stats-value { font-size: 1.25rem; font-weight: 600; color: #1f2937; }
+        .stats-label { font-size: 0.875rem; color: #6b7280; }
+        .timer-display-lg {
+            font-size: 3rem; font-weight: 700; color: #111827; text-align: center;
+            margin: 1rem 0; padding: 1rem; background-color: #f9fafb;
+            border-radius: 0.5rem; border: 1px solid #e5e7eb;
+        }
+        .toast {
+            position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+            background-color: rgba(17, 24, 39, 0.85); color: white; padding: 0.75rem 1.5rem;
+            border-radius: 0.5rem; z-index: 1000; opacity: 0;
+            transition: opacity 0.5s ease, transform 0.3s ease; font-size: 0.9rem;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        }
+        .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+        .toast.show.initial { transform: translateX(-50%) translateY(20px); }
+        .icon-sm { width: 1.25rem; height: 1.25rem; margin-right: 0.5rem; }
+        .hidden { display: none; }
+        
+        /* Tab Navigation Styles */
+        .tabs {
+            display: flex;
+            border-bottom: 2px solid #e5e7eb;
+            margin-bottom: 1.5rem;
+        }
+        .tab-button {
+            padding: 0.75rem 1.5rem;
+            cursor: pointer;
+            border: none;
+            background-color: transparent;
+            font-size: 1rem;
+            font-weight: 500;
+            color: #6b7280;
+            border-bottom: 2px solid transparent;
+            margin-bottom: -2px; /* Align with container border */
+        }
+        .tab-button.active {
+            color: #3b82f6;
+            border-bottom-color: #3b82f6;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        .chart-bar {
+            background-color: #3b82f6;
+            border-radius: 0.25rem;
+            text-align: center;
+            color: white;
+            font-size: 0.75rem;
+            line-height: 1.25rem; /* For text vertical centering */
+            transition: width 0.5s ease-in-out;
+        }
+    </style>
+</head>
+<body>
+    <div class="container-app">
+        <header class="mb-6 py-4">
+            <h1 class="text-3xl font-bold text-center text-gray-800">高级摸鱼记录器 🐟</h1>
+        </header>
+
+        <div class="tabs">
+            <button class="tab-button active" data-tab="monthlyView">本月视图</button>
+            <button class="tab-button" data-tab="yearlyView">年度回顾</button>
+        </div>
+
+        <div id="monthlyView" class="tab-content active">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div class="md:col-span-1 space-y-6">
+                    <div class="card">
+                        <h2 class="text-xl font-semibold text-gray-700 mb-4">⚙️ 基本配置</h2>
+                        <div class="space-y-4">
+                            <div>
+                                <label for="monthlySalary" class="block text-sm font-medium text-gray-700 mb-1">月薪 (元):</label>
+                                <input type="number" id="monthlySalary" class="input-field" placeholder="例如: 10000">
+                            </div>
+                            <div>
+                                <label for="workStartTime" class="block text-sm font-medium text-gray-700 mb-1">上班时间:</label>
+                                <input type="time" id="workStartTime" class="input-field">
+                            </div>
+                            <div>
+                                <label for="workEndTime" class="block text-sm font-medium text-gray-700 mb-1">下班时间:</label>
+                                <input type="time" id="workEndTime" class="input-field">
+                            </div>
+                            <button id="saveSettingsButton" class="btn btn-success w-full">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="icon-sm" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" /></svg>
+                                保存配置
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <h2 class="text-xl font-semibold text-gray-700 mb-3">🎣 开始摸鱼</h2>
+                        <p id="statusText" class="text-center text-gray-600 mb-2">当前状态：休息中 😴</p>
+                        <div id="timerDisplay" class="timer-display-lg">00:00:00</div>
+                        <div class="space-y-3">
+                            <div>
+                                <label for="slackingTypeSelect" class="block text-sm font-medium text-gray-700 mb-1">摸鱼类型:</label>
+                                <select id="slackingTypeSelect" class="select-field"></select>
+                            </div>
+                            <div id="customSlackingTypeDiv" class="hidden">
+                                <label for="customSlackingTypeInput" class="block text-sm font-medium text-gray-700 mb-1">自定义类型:</label>
+                                <input type="text" id="customSlackingTypeInput" class="input-field" placeholder="请输入自定义摸鱼类型">
+                            </div>
+                            <div>
+                                <label for="activityNotesInput" class="block text-sm font-medium text-gray-700 mb-1">摸鱼备注 (可选):</label>
+                                <input type="text" id="activityNotesInput" class="input-field" placeholder="例如：看了xxx视频第x集">
+                            </div>
+                        </div>
+                        <button id="toggleButton" class="btn btn-primary w-full mt-4">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="icon-sm" viewBox="0 0 20 20" fill="currentColor"><path d="M10 2a1 1 0 00-1 1v1a1 1 0 002 0V3a1 1 0 00-1-1zM4 9a1 1 0 011-1h10a1 1 0 110 2H5a1 1 0 01-1-1zM10 14a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM3 10a1 1 0 000 2h.01a1 1 0 100-2H3zm14 0a1 1 0 000 2h.01a1 1 0 100-2H17zM6.318 6.318a1 1 0 000 1.414L7.025 8.44a1 1 0 001.414-1.414L7.732 6.32a1 1 0 00-1.414 0zm8.364 5.657a1 1 0 000 1.414l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 0zm.707-7.071a1 1 0 00-1.414 0l-.707.707a1 1 0 101.414 1.414l.707-.707a1 1 0 000-1.414zM7.025 11.56a1 1 0 00-1.414 1.414l.707.707a1 1 0 001.414-1.414l-.707-.707z" /><path fill-rule="evenodd" d="M10 4a6 6 0 100 12 6 6 0 000-12zM8 10a2 2 0 114 0 2 2 0 01-4 0z" clip-rule="evenodd" /></svg>
+                            开始摸鱼
+                        </button>
+                    </div>
+                </div>
+
+                <div class="md:col-span-2 space-y-6">
+                    <div class="card">
+                        <h2 class="text-xl font-semibold text-gray-700 mb-4">📊 本月汇总 (截至今日)</h2>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                            <div class="p-4 bg-gray-50 rounded-lg"><p class="stats-label">月薪配置</p><p id="summaryMonthlySalary" class="stats-value">未设置</p></div>
+                            <div class="p-4 bg-gray-50 rounded-lg"><p class="stats-label">每日工作时间</p><p id="summaryDailyWorkHours" class="stats-value">未设置</p></div>
+                            <div class="p-4 bg-gray-50 rounded-lg"><p class="stats-label">本月工作日</p><p id="summaryWorkingDays" class="stats-value">0 天</p></div>
+                            <div class="p-4 bg-gray-50 rounded-lg"><p class="stats-label">本月计划总工时</p><p id="summaryTotalScheduledHours" class="stats-value">0 小时</p></div>
+                            <div class="p-4 bg-gray-50 rounded-lg"><p class="stats-label">本月总摸鱼</p><p id="summaryTotalSlackingTime" class="stats-value">0 小时</p></div>
+                            <div class="p-4 bg-blue-50 rounded-lg border border-blue-200"><p class="stats-label text-blue-700">实际生产力工时</p><p id="summaryProductiveHours" class="stats-value text-blue-600">0 小时</p></div>
+                            <div class="p-4 bg-green-50 rounded-lg border border-green-200 col-span-1 sm:col-span-2 lg:col-span-3"><p class="stats-label text-green-700">💰 时薪 (按实际生产力计算)</p><p id="summaryEffectiveHourlyRate" class="stats-value text-green-600 text-2xl">¥ 0.00 /小时</p></div>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div class="flex justify-between items-center mb-3">
+                            <h2 class="text-xl font-semibold text-gray-700">📜 摸鱼历史 (本月)</h2>
+                            <button id="clearHistoryButton" class="text-sm text-red-500 hover:text-red-700 font-medium flex items-center">
+                                <svg xmlns="http://www.w3.org/2000/svg" class="icon-sm" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                                清空所有历史
+                            </button>
+                        </div>
+                        <div id="historyList" class="space-y-3 max-h-96 overflow-y-auto pr-2">
+                            <p class="text-gray-500 text-center" id="noHistoryText">暂无摸鱼记录。</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="yearlyView" class="tab-content">
+            <div class="card">
+                <div class="flex flex-col sm:flex-row justify-between items-center mb-6">
+                    <h2 class="text-2xl font-semibold text-gray-700 mb-3 sm:mb-0">📅 年度回顾</h2>
+                    <div>
+                        <label for="yearSelect" class="mr-2 text-sm font-medium text-gray-700">选择年份:</label>
+                        <select id="yearSelect" class="select-field inline-block w-auto sm:w-40"></select>
+                    </div>
+                </div>
+
+                <div id="yearlyStatsContainer" class="hidden">
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
+                        <div class="p-4 bg-indigo-50 rounded-lg border border-indigo-200">
+                            <p class="stats-label text-indigo-700">年度总摸鱼时长</p>
+                            <p id="yearlyTotalSlackingTime" class="stats-value text-indigo-600">0 小时</p>
+                        </div>
+                        <div class="p-4 bg-pink-50 rounded-lg border border-pink-200">
+                            <p class="stats-label text-pink-700">年度摸鱼天数</p>
+                            <p id="yearlySlackingDays" class="stats-value text-pink-600">0 天</p>
+                        </div>
+                        <div class="p-4 bg-yellow-50 rounded-lg border border-yellow-200">
+                            <p class="stats-label text-yellow-700">年度最常见摸鱼类型</p>
+                            <p id="yearlyMostCommonType" class="stats-value text-yellow-600">-</p>
+                        </div>
+                    </div>
+                    
+                    <h3 class="text-xl font-semibold text-gray-700 mb-3">各月份摸鱼时长 (小时)</h3>
+                    <div id="monthlyBreakdownChart" class="space-y-2 p-4 bg-gray-50 rounded-lg">
+                        <p id="noYearlyDataText" class="text-gray-500 text-center">该年份无摸鱼数据。</p>
+                    </div>
+                </div>
+                 <p id="noYearSelectedText" class="text-gray-500 text-center mt-4">请先选择一个年份查看数据。</p>
+            </div>
+        </div>
+
+    </div>
+
+    <div id="toastMessage" class="toast"></div>
+
+    <script>
+        // --- DOM Elements ---
+        const monthlySalaryInput = document.getElementById('monthlySalary');
+        const workStartTimeInput = document.getElementById('workStartTime');
+        const workEndTimeInput = document.getElementById('workEndTime');
+        const saveSettingsButton = document.getElementById('saveSettingsButton');
+
+        const statusText = document.getElementById('statusText');
+        const timerDisplay = document.getElementById('timerDisplay');
+        
+        const slackingTypeSelect = document.getElementById('slackingTypeSelect');
+        const customSlackingTypeDiv = document.getElementById('customSlackingTypeDiv');
+        const customSlackingTypeInput = document.getElementById('customSlackingTypeInput');
+        const activityNotesInput = document.getElementById('activityNotesInput');
+        
+        const toggleButton = document.getElementById('toggleButton');
+        
+        const summaryMonthlySalary = document.getElementById('summaryMonthlySalary');
+        const summaryDailyWorkHours = document.getElementById('summaryDailyWorkHours');
+        const summaryWorkingDays = document.getElementById('summaryWorkingDays');
+        const summaryTotalScheduledHours = document.getElementById('summaryTotalScheduledHours');
+        const summaryTotalSlackingTime = document.getElementById('summaryTotalSlackingTime');
+        const summaryProductiveHours = document.getElementById('summaryProductiveHours');
+        const summaryEffectiveHourlyRate = document.getElementById('summaryEffectiveHourlyRate');
+
+        const historyList = document.getElementById('historyList');
+        const clearHistoryButton = document.getElementById('clearHistoryButton');
+        const noHistoryText = document.getElementById('noHistoryText');
+        const toastMessage = document.getElementById('toastMessage');
+
+        // Tab Navigation Elements
+        const tabButtons = document.querySelectorAll('.tab-button');
+        const tabContents = document.querySelectorAll('.tab-content');
+
+        // Yearly View Elements
+        const yearSelect = document.getElementById('yearSelect');
+        const yearlyStatsContainer = document.getElementById('yearlyStatsContainer');
+        const yearlyTotalSlackingTime = document.getElementById('yearlyTotalSlackingTime');
+        const yearlySlackingDays = document.getElementById('yearlySlackingDays');
+        const yearlyMostCommonType = document.getElementById('yearlyMostCommonType');
+        const monthlyBreakdownChart = document.getElementById('monthlyBreakdownChart');
+        const noYearlyDataText = document.getElementById('noYearlyDataText');
+        const noYearSelectedText = document.getElementById('noYearSelectedText');
+
+
+        // --- State Variables ---
+        let appSettings = {
+            monthlySalary: null,
+            workStartTime: '09:00',
+            workEndTime: '18:00',
+        };
+        let isSlacking = false;
+        let slackingStartTime = null;
+        let timerInterval = null;
+        let slackingHistory = []; // This will store all history items
+        const initialSlackingTypes = [
+            "摸鱼群聊天", "刷短视频", "看新闻资讯", "网上冲浪", "发呆放空", "学习充电 (伪)", "其他"
+        ];
+        const monthNames = ["1月", "2月", "3月", "4月", "5月", "6月", "7月", "8月", "9月", "10月", "11月", "12月"];
+
+
+        // --- Helper Functions ---
+        function formatDuration(ms, mode = 'hms') {
+            if (ms <= 0) { // Handle zero or negative ms
+                return mode === 'hours' ? '0.00' : '00:00:00';
+            }
+            const totalSeconds = Math.floor(ms / 1000);
+            const hours = Math.floor(totalSeconds / 3600);
+            const minutes = Math.floor((totalSeconds % 3600) / 60);
+            const seconds = totalSeconds % 60;
+            if (mode === 'hours') {
+                return (ms / (1000 * 60 * 60)).toFixed(2);
+            }
+            return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+        }
+        
+        function showToast(message, duration = 3000) {
+            toastMessage.textContent = message;
+            toastMessage.classList.add('show', 'initial');
+            setTimeout(() => toastMessage.classList.remove('initial'), 10); 
+            setTimeout(() => {
+                toastMessage.classList.remove('show');
+            }, duration);
+        }
+
+        function getMillisecondsFromTime(timeStr) { 
+            if (!timeStr) return 0;
+            const [hours, minutes] = timeStr.split(':').map(Number);
+            return (hours * 60 + minutes) * 60 * 1000;
+        }
+
+        function getWeekdaysInCurrentMonth() {
+            const today = new Date();
+            const year = today.getFullYear();
+            const month = today.getMonth(); 
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            let weekdays = 0;
+            for (let day = 1; day <= daysInMonth; day++) {
+                const currentDate = new Date(year, month, day);
+                const dayOfWeek = currentDate.getDay(); 
+                if (dayOfWeek !== 0 && dayOfWeek !== 6) {
+                    weekdays++;
+                }
+            }
+            return weekdays;
+        }
+
+        // --- Tab Navigation Logic ---
+        tabButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                tabButtons.forEach(btn => btn.classList.remove('active'));
+                button.classList.add('active');
+                
+                const targetTab = button.getAttribute('data-tab');
+                tabContents.forEach(content => {
+                    if (content.id === targetTab) {
+                        content.classList.add('active');
+                    } else {
+                        content.classList.remove('active');
+                    }
+                });
+                if (targetTab === 'yearlyView') {
+                    populateYearSelect(); // Populate years when yearly tab is active
+                    renderYearlyData(); // Render data for potentially pre-selected year
+                }
+            });
+        });
+
+        // --- Slacking Type Management ---
+        function populateSlackingTypesDropdown() {
+            slackingTypeSelect.innerHTML = '';
+            initialSlackingTypes.forEach(type => {
+                const option = document.createElement('option');
+                option.value = type;
+                option.textContent = type;
+                slackingTypeSelect.appendChild(option);
+            });
+        }
+
+        slackingTypeSelect.addEventListener('change', function() {
+            if (this.value === "其他") {
+                customSlackingTypeDiv.classList.remove('hidden');
+                customSlackingTypeInput.focus();
+            } else {
+                customSlackingTypeDiv.classList.add('hidden');
+                customSlackingTypeInput.value = '';
+            }
+        });
+
+        // --- Settings Management ---
+        function loadSettings() {
+            const storedSettings = localStorage.getItem('appSettings_v3');
+            if (storedSettings) {
+                appSettings = JSON.parse(storedSettings);
+            }
+            monthlySalaryInput.value = appSettings.monthlySalary || '';
+            workStartTimeInput.value = appSettings.workStartTime || '09:00';
+            workEndTimeInput.value = appSettings.workEndTime || '18:00';
+            updateMonthlySummaryDisplay();
+        }
+
+        function saveSettings() {
+            appSettings.monthlySalary = parseFloat(monthlySalaryInput.value) || null;
+            appSettings.workStartTime = workStartTimeInput.value || '09:00';
+            appSettings.workEndTime = workEndTimeInput.value || '18:00';
+            localStorage.setItem('appSettings_v3', JSON.stringify(appSettings));
+            showToast('✅ 配置已保存!', 2000);
+            updateMonthlySummaryDisplay();
+        }
+
+        // --- Slacking Logic (Monthly View) ---
+        function loadSlackingHistory() {
+            const storedHistory = localStorage.getItem('slackingHistory_v3'); 
+            if (storedHistory) {
+                slackingHistory = JSON.parse(storedHistory);
+            }
+            renderMonthlyHistory();
+            updateMonthlySummaryDisplay();
+            // Also update yearly view if it's active or becomes active
+            populateYearSelect(); 
+            renderYearlyData();
+        }
+
+        function saveSlackingHistory() {
+            localStorage.setItem('slackingHistory_v3', JSON.stringify(slackingHistory));
+        }
+
+        function renderMonthlyHistory() { // Renamed to be specific
+            historyList.innerHTML = ''; 
+            const today = new Date();
+            const currentMonth = today.getMonth();
+            const currentYear = today.getFullYear();
+
+            const monthlyHistory = slackingHistory.filter(item => {
+                 const itemDate = new Date(item.startTime);
+                 return itemDate.getMonth() === currentMonth && itemDate.getFullYear() === currentYear;
+            });
+
+            if (monthlyHistory.length === 0) {
+                noHistoryText.style.display = 'block';
+                return;
+            }
+            noHistoryText.style.display = 'none';
+
+            monthlyHistory.slice().reverse().forEach(item => {
+                const itemDiv = document.createElement('div');
+                itemDiv.className = 'p-3 bg-gray-50 rounded-md border border-gray-200';
+                
+                let activityDisplay = `<p class="font-medium text-gray-800">${item.activityType || '未指定类型'}</p>`;
+                if (item.activityNotes) {
+                    activityDisplay += `<p class="text-sm text-gray-600 mt-1">备注: ${item.activityNotes}</p>`;
+                }
+                
+                const durationText = formatDuration(item.duration);
+                const dateText = new Date(item.startTime).toLocaleString('zh-CN', { year: 'numeric', month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+
+                itemDiv.innerHTML = `
+                    <div class="flex justify-between items-start">
+                        <div>${activityDisplay}</div>
+                        <p class="text-sm text-gray-700 font-semibold whitespace-nowrap pl-3">${durationText}</p>
+                    </div>
+                    <p class="text-xs text-gray-500 mt-1">开始于: ${dateText}</p>
+                `;
+                historyList.appendChild(itemDiv);
+            });
+        }
+
+        function updateTimer() {
+            if (!isSlacking || !slackingStartTime) return;
+            const now = Date.now();
+            const elapsed = now - slackingStartTime;
+            timerDisplay.textContent = formatDuration(elapsed);
+        }
+        
+        // --- Monthly Summary Calculations & Display ---
+        function updateMonthlySummaryDisplay() {
+            summaryMonthlySalary.textContent = appSettings.monthlySalary ? `¥ ${appSettings.monthlySalary.toLocaleString()}` : '未设置';
+
+            const dailyWorkStartMs = getMillisecondsFromTime(appSettings.workStartTime);
+            const dailyWorkEndMs = getMillisecondsFromTime(appSettings.workEndTime);
+            let dailyWorkDurationMs = 0;
+            if (appSettings.workStartTime && appSettings.workEndTime && dailyWorkEndMs > dailyWorkStartMs) {
+                dailyWorkDurationMs = dailyWorkEndMs - dailyWorkStartMs;
+                 summaryDailyWorkHours.textContent = `${appSettings.workStartTime} - ${appSettings.workEndTime} (${formatDuration(dailyWorkDurationMs, 'hours')} 小时)`;
+            } else {
+                summaryDailyWorkHours.textContent = '未设置或无效';
+            }
+
+            const weekdaysThisMonth = getWeekdaysInCurrentMonth();
+            summaryWorkingDays.textContent = `${weekdaysThisMonth} 天`;
+
+            const totalScheduledHours = (dailyWorkDurationMs / (1000 * 60 * 60)) * weekdaysThisMonth;
+            summaryTotalScheduledHours.textContent = `${totalScheduledHours.toFixed(2)} 小时`;
+            
+            const today = new Date();
+            const currentMonth = today.getMonth();
+            const currentYear = today.getFullYear();
+            const monthlySlackingMs = slackingHistory
+                .filter(item => {
+                    const itemDate = new Date(item.startTime);
+                    return itemDate.getMonth() === currentMonth && itemDate.getFullYear() === currentYear;
+                })
+                .reduce((sum, item) => sum + item.duration, 0);
+            const monthlySlackingHours = parseFloat(formatDuration(monthlySlackingMs, 'hours'));
+            summaryTotalSlackingTime.textContent = `${monthlySlackingHours.toFixed(2)} 小时`;
+
+            const productiveHours = totalScheduledHours - monthlySlackingHours;
+            summaryProductiveHours.textContent = `${productiveHours > 0 ? productiveHours.toFixed(2) : '0.00'} 小时`;
+
+            let effectiveRate = 0;
+            if (appSettings.monthlySalary && productiveHours > 0) {
+                effectiveRate = appSettings.monthlySalary / productiveHours;
+            }
+            summaryEffectiveHourlyRate.textContent = `¥ ${effectiveRate.toFixed(2)} /小时`;
+        }
+
+        // --- Yearly Data Logic ---
+        function getUniqueYearsFromHistory() {
+            const years = new Set();
+            slackingHistory.forEach(item => {
+                years.add(new Date(item.startTime).getFullYear());
+            });
+            return Array.from(years).sort((a, b) => b - a); // Sort descending
+        }
+
+        function populateYearSelect() {
+            const uniqueYears = getUniqueYearsFromHistory();
+            const currentSelectedYear = yearSelect.value; // Preserve selection if possible
+            yearSelect.innerHTML = '<option value="">-- 选择年份 --</option>'; // Default option
+            
+            if (uniqueYears.length === 0) {
+                 yearlyStatsContainer.classList.add('hidden');
+                 noYearSelectedText.textContent = '无历史数据可供回顾。';
+                 noYearSelectedText.classList.remove('hidden');
+                 return;
+            }
+
+            uniqueYears.forEach(year => {
+                const option = document.createElement('option');
+                option.value = year;
+                option.textContent = year;
+                yearSelect.appendChild(option);
+            });
+            // Restore previous selection or select the most recent year
+            if (uniqueYears.includes(parseInt(currentSelectedYear))) {
+                yearSelect.value = currentSelectedYear;
+            } else if (uniqueYears.length > 0) {
+                 yearSelect.value = uniqueYears[0]; // Default to most recent year if no prior selection or prior selection invalid
+            }
+        }
+
+        yearSelect.addEventListener('change', renderYearlyData);
+
+        function renderYearlyData() {
+            const selectedYear = parseInt(yearSelect.value);
+            if (!selectedYear) {
+                yearlyStatsContainer.classList.add('hidden');
+                noYearSelectedText.classList.remove('hidden');
+                noYearSelectedText.textContent = '请先选择一个年份查看数据。';
+                return;
+            }
+            
+            noYearSelectedText.classList.add('hidden');
+            yearlyStatsContainer.classList.remove('hidden');
+
+            const yearlyData = slackingHistory.filter(item => new Date(item.startTime).getFullYear() === selectedYear);
+
+            if (yearlyData.length === 0) {
+                yearlyTotalSlackingTime.textContent = '0.00 小时';
+                yearlySlackingDays.textContent = '0 天';
+                yearlyMostCommonType.textContent = '-';
+                monthlyBreakdownChart.innerHTML = ''; // Clear previous chart
+                noYearlyDataText.classList.remove('hidden');
+                return;
+            }
+            noYearlyDataText.classList.add('hidden');
+
+            // Calculate total slacking time for the year
+            const totalMs = yearlyData.reduce((sum, item) => sum + item.duration, 0);
+            yearlyTotalSlackingTime.textContent = `${formatDuration(totalMs, 'hours')} 小时`;
+
+            // Calculate slacking days
+            const slackingDaysSet = new Set();
+            yearlyData.forEach(item => {
+                const date = new Date(item.startTime);
+                slackingDaysSet.add(`${date.getFullYear()}-${date.getMonth()}-${date.getDate()}`);
+            });
+            yearlySlackingDays.textContent = `${slackingDaysSet.size} 天`;
+
+            // Calculate most common slacking type
+            const typeCounts = {};
+            yearlyData.forEach(item => {
+                typeCounts[item.activityType] = (typeCounts[item.activityType] || 0) + 1;
+            });
+            let maxCount = 0;
+            let commonType = '-';
+            for (const type in typeCounts) {
+                if (typeCounts[type] > maxCount) {
+                    maxCount = typeCounts[type];
+                    commonType = type;
+                }
+            }
+            yearlyMostCommonType.textContent = commonType;
+
+            // Monthly breakdown
+            const monthlySlacking = Array(12).fill(0); // Milliseconds per month
+            yearlyData.forEach(item => {
+                const month = new Date(item.startTime).getMonth(); // 0-11
+                monthlySlacking[month] += item.duration;
+            });
+
+            monthlyBreakdownChart.innerHTML = ''; // Clear previous chart
+            let maxMonthlyMs = Math.max(...monthlySlacking);
+            if (maxMonthlyMs === 0) maxMonthlyMs = 1; // Avoid division by zero for width calculation if all months are 0
+
+            monthlySlacking.forEach((ms, index) => {
+                const hours = parseFloat(formatDuration(ms, 'hours'));
+                const barWidthPercentage = (ms / maxMonthlyMs) * 100;
+                
+                const monthDiv = document.createElement('div');
+                monthDiv.className = 'flex items-center mb-1';
+                monthDiv.innerHTML = `
+                    <span class="w-12 text-sm text-gray-600">${monthNames[index]}:</span>
+                    <div class="flex-grow bg-gray-200 rounded h-5 mr-2 ml-1">
+                        <div class="chart-bar h-5" style="width: ${barWidthPercentage}%;" title="${hours.toFixed(2)} 小时">${hours > 0 ? hours.toFixed(1) : ''}</div>
+                    </div>
+                `;
+                monthlyBreakdownChart.appendChild(monthDiv);
+            });
+        }
+
+
+        // --- Event Listeners (Monthly View) ---
+        saveSettingsButton.addEventListener('click', saveSettings);
+
+        toggleButton.addEventListener('click', () => {
+            isSlacking = !isSlacking;
+            if (isSlacking) {
+                slackingStartTime = Date.now();
+                timerInterval = setInterval(updateTimer, 1000);
+                toggleButton.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="icon-sm" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8 7a1 1 0 00-1 1v4a1 1 0 102 0V8a1 1 0 00-1-1zm4 0a1 1 0 00-1 1v4a1 1 0 102 0V8a1 1 0 00-1-1z" clip-rule="evenodd" /></svg> 结束摸鱼`;
+                toggleButton.classList.remove('btn-primary');
+                toggleButton.classList.add('btn-danger');
+                statusText.textContent = '当前状态：摸鱼中... 🐟';
+                activityNotesInput.disabled = true;
+                slackingTypeSelect.disabled = true;
+                customSlackingTypeInput.disabled = true;
+                showToast('摸鱼开始！尽情享受～', 2000);
+            } else {
+                clearInterval(timerInterval);
+                const endTime = Date.now();
+                const duration = endTime - slackingStartTime;
+                
+                if (duration > 1000) { 
+                    let activityType = slackingTypeSelect.value;
+                    if (activityType === "其他") {
+                        activityType = customSlackingTypeInput.value.trim() || "自定义摸鱼";
+                    }
+
+                    slackingHistory.push({
+                        startTime: slackingStartTime,
+                        endTime: endTime,
+                        duration: duration,
+                        activityType: activityType,
+                        activityNotes: activityNotesInput.value.trim()
+                    });
+                    saveSlackingHistory();
+                    renderMonthlyHistory(); // Update monthly history view
+                    updateMonthlySummaryDisplay(); 
+                    // Potentially update yearly view if it's active or becomes active
+                    populateYearSelect();
+                    renderYearlyData(); // Re-render yearly data as new data is added
+                }
+                
+                timerDisplay.textContent = '00:00:00';
+                toggleButton.innerHTML = `<svg xmlns="http://www.w3.org/2000/svg" class="icon-sm" viewBox="0 0 20 20" fill="currentColor"><path d="M10 2a1 1 0 00-1 1v1a1 1 0 002 0V3a1 1 0 00-1-1zM4 9a1 1 0 011-1h10a1 1 0 110 2H5a1 1 0 01-1-1zM10 14a1 1 0 011 1v1a1 1 0 11-2 0v-1a1 1 0 011-1zM3 10a1 1 0 000 2h.01a1 1 0 100-2H3zm14 0a1 1 0 000 2h.01a1 1 0 100-2H17zM6.318 6.318a1 1 0 000 1.414L7.025 8.44a1 1 0 001.414-1.414L7.732 6.32a1 1 0 00-1.414 0zm8.364 5.657a1 1 0 000 1.414l.707.707a1 1 0 001.414-1.414l-.707-.707a1 1 0 00-1.414 0zm.707-7.071a1 1 0 00-1.414 0l-.707.707a1 1 0 101.414 1.414l.707-.707a1 1 0 000-1.414zM7.025 11.56a1 1 0 00-1.414 1.414l.707.707a1 1 0 001.414-1.414l-.707-.707z" /><path fill-rule="evenodd" d="M10 4a6 6 0 100 12 6 6 0 000-12zM8 10a2 2 0 114 0 2 2 0 01-4 0z" clip-rule="evenodd" /></svg> 开始摸鱼`;
+                toggleButton.classList.remove('btn-danger');
+                toggleButton.classList.add('btn-primary');
+                statusText.textContent = '当前状态：休息中 😴';
+                
+                activityNotesInput.value = '';
+                activityNotesInput.disabled = false;
+                slackingTypeSelect.disabled = false;
+                customSlackingTypeInput.value = '';
+                customSlackingTypeInput.disabled = false;
+                customSlackingTypeDiv.classList.add('hidden'); 
+                slackingTypeSelect.value = initialSlackingTypes[0]; 
+
+                slackingStartTime = null;
+                showToast('摸鱼结束！已光荣记录。', 2000);
+            }
+        });
+
+        clearHistoryButton.addEventListener('click', () => {
+            if (slackingHistory.length === 0) {
+                showToast('没有历史记录可以清空。', 2000);
+                return;
+            }
+            // For simplicity, using confirm. For a real app, use a custom modal.
+            if (confirm('确定要清空所有摸鱼历史记录吗？此操作不可撤销，将影响所有视图。')) {
+                slackingHistory = [];
+                saveSlackingHistory();
+                renderMonthlyHistory(); 
+                updateMonthlySummaryDisplay(); 
+                populateYearSelect(); // Repopulate (will show no years or default message)
+                renderYearlyData();   // Re-render yearly data (will show no data)
+                showToast('所有历史记录已清空！', 2000);
+            }
+        });
+
+        // --- Initial Load ---
+        document.addEventListener('DOMContentLoaded', () => {
+            populateSlackingTypesDropdown();
+            loadSettings(); // Loads settings and updates monthly summary
+            loadSlackingHistory(); // Loads all history, renders monthly, updates monthly summary, populates year select, and renders yearly data for default/selected year.
+            
+            if (!workStartTimeInput.value) workStartTimeInput.value = '09:00';
+            if (!workEndTimeInput.value) workEndTimeInput.value = '18:00';
+            
+            if (slackingTypeSelect.value !== "其他") {
+                 customSlackingTypeDiv.classList.add('hidden');
+            }
+            // Default to monthly view active
+            document.querySelector('.tab-button[data-tab="monthlyView"]').classList.add('active');
+            document.getElementById('monthlyView').classList.add('active');
+            document.querySelector('.tab-button[data-tab="yearlyView"]').classList.remove('active');
+            document.getElementById('yearlyView').classList.remove('active');
+        });
+
+    </script>
+</body>
+</html>
